@@ -1,3 +1,8 @@
+# don't accidentally upload token to github
+bot_token.txt
+
+## Everything below this point is default python stuff
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
