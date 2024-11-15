@@ -76,4 +76,7 @@ class Course:
             if name == 'waitlist': continue
             res += "{}:\t{}\n".format(name, self.data[name])
         res += "waitlist open: {}\n".format('yes' if self.waitlist_available() else 'no')
+        if self.waitlist_available():
+            for name in self.data['waitlist']:
+                res += "waitlist {}:\t{}\n".format(name, self.data['waitlist'][name])
         return res
