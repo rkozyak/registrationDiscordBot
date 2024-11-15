@@ -5,6 +5,7 @@ import re
 import random
 
 class Course:
+    name: str
     def __init__(self, crn: str, term: str):
         self.crn = crn
         self.term = term # default

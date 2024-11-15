@@ -36,7 +36,22 @@ async def track(ctx: commands.Context, crn: str):
                 return
         global_request_list.new_request(TrackRequest(crn,"202502",ctx.author.id,ctx.channel.id))
         save_request_list(global_request_list)
-        await ctx.reply("Now tracking CRN: " + crn + " for user " + ctx.author.name)
+        await ctx.reply(f"Now tracking CRN: {crn}")
+
+@bot.command()
+async def tracking(ctx: commands.Context):
+    linked_requests: list[TrackRequest] = []
+    for request in global_request_list.trackRequests:
+        if request.userId == ctx.author.id:
+            linked_requests.append(request)
+    if len(linked_requests) == 0:
+        await ctx.reply("You are not tracking any courses")
+    else:
+        message = "You are tracking:\n"
+        for request in linked_requests:
+            message += f"{request.course.name}\n"
+        await ctx.reply(message)
+
 
 @tasks.loop(seconds=10)
 async def check_crn():
