@@ -1,5 +1,6 @@
-# don't accidentally upload token to github
+# don't accidentally upload temp items to github
 bot_token.txt
+saved_requests.
 
 ## Everything below this point is default python stuff
 
