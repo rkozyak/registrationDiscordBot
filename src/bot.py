@@ -27,6 +27,13 @@ async def track(ctx: commands.Context, crn: str):
     if ctx.guild is None:
         await ctx.reply("Error: Can only call $track from a channel in a server")
     else:
+        for request in global_request_list.trackRequests:
+            if request.crn == crn and request.userId == ctx.author.id:
+                if request.channelId == ctx.channel.id:
+                    await ctx.reply(f"You are already tracking CRN: {crn}")
+                else:
+                    await ctx.reply(f"You are already tracking CRN: {crn} in channel <#{request.channelId}>")
+                return
         global_request_list.new_request(TrackRequest(crn,"202502",ctx.author.id,ctx.channel.id))
         save_request_list(global_request_list)
         await ctx.reply("Now tracking CRN: " + crn + " for user " + ctx.author.name)
