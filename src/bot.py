@@ -39,11 +39,14 @@ async def track(ctx: commands.Context, crn: str):
                 else:
                     await ctx.reply(f"You are already tracking CRN: `{crn}` in channel <#{request.channelId}>")
                 return
-        global_request_list.append(TrackRequest(crn,"202502",ctx.author.id,ctx.channel.id))
-            # await ctx.reply(f"Error retrieving CRN: `{crn}`")
-            # return
-        save_request_list(global_request_list)
-        await ctx.reply(f"Now tracking CRN: `{crn}`")
+        newRequest = TrackRequest(crn,"202502",ctx.author.id,ctx.channel.id)
+        if newRequest.course.data['seats'] == -1:
+            await ctx.reply(f"Error retrieving CRN: `{crn}`")
+            return
+        else:
+            global_request_list.append(newRequest)
+            save_request_list(global_request_list)
+            await ctx.reply(f"Now tracking CRN: `{crn}`")
 
 @bot.command()
 async def tracking(ctx: commands.Context):
