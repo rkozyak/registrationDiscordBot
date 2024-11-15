@@ -72,6 +72,19 @@ async def untrack(ctx: commands.Context, crn: str):
             return
     await ctx.reply(f"You are not tracking CRN: `{crn}`")
 
+bot.remove_command('help')
+@bot.command()
+async def help(ctx: commands.Context):
+    await ctx.reply(
+    """
+    Commands:
+        `$help`: Displays all commands.
+        `$info CRN1 CRN2 ...` Displays info about one or more CRNs.
+        `$track CRN` Adds a CRN to be tracked. User will be pinged when the status changes.
+        `$untrack CRN` Removes a CRN from your tracking list.
+        `$tracking` Displays all the courses you are tracking.
+    """)
+
 @tasks.loop(seconds=10)
 async def check_crn():
     messages = []
