@@ -25,7 +25,7 @@ async def track(ctx: commands.Context, crn: str):
     if ctx.guild is None:
         await ctx.reply("Error: Can only call $track from a channel in a server")
     else:
-        global_request_list.new_request(TrackRequest(crn,"202502",ctx.author,ctx.channel.id))
+        global_request_list.new_request(TrackRequest(crn,"202502",ctx.author.id,ctx.channel.id))
         await ctx.reply("Now tracking CRN: " + crn + " for user " + ctx.author.name)
 
 @tasks.loop(seconds=10)
@@ -33,7 +33,7 @@ async def check_crn():
     messages = []
     for request in global_request_list.trackRequests:
         if request.fetch():
-            text = (request.user.mention + " course status changed:" 
+            text = (f"<@{request.userId}> course status changed:" 
             + "\n" + str(request.course))
             messages.append((request.channelId,text))
         print(request.course)

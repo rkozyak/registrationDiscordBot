@@ -11,15 +11,15 @@ class TrackStatus(Enum):
 class TrackRequest:
     crn: str
     term: str
-    user: discord.User
+    userId: int
     channelId: int
     status: TrackStatus
     course: Course
 
-    def __init__(self, crn: str, term: str, user: discord.User, channelId: int):
+    def __init__(self, crn: str, term: str, userId: int, channelId: int):
         self.crn = crn
         self.term = term
-        self.user = user
+        self.userId = userId
         self.channelId = channelId
         self.status = None
         self.fetch()
@@ -33,7 +33,7 @@ class TrackRequest:
         elif self.course.waitlist_available():
             self.status = TrackStatus.CLASS_CLOSED_WAITLIST_OPEN
         else:
-            self.status = TrackStatus.CLASS_CLOSED_WAITLIST_CLOSED    
+            self.status = TrackStatus.CLASS_CLOSED_WAITLIST_CLOSED
         return oldStatus != None and oldStatus != self.status
     
 class TrackList:
