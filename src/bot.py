@@ -52,6 +52,15 @@ async def tracking(ctx: commands.Context):
             message += f"{request.course.name}\n"
         await ctx.reply(message)
 
+@bot.command()
+async def untrack(ctx: commands.Context, crn: str):
+    for request in global_request_list.trackRequests:
+        if request.userId == ctx.author.id and request.crn == crn:
+            global_request_list.trackRequests.remove(request)
+            save_request_list(global_request_list)
+            await ctx.reply(f"You are no longer tracking CRN {crn}")
+            return
+    await ctx.reply(f"You are not tracking CRN {crn}")
 
 @tasks.loop(seconds=10)
 async def check_crn():
