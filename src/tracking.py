@@ -35,11 +35,3 @@ class TrackRequest:
         else:
             self.status = TrackStatus.CLASS_CLOSED_WAITLIST_CLOSED
         return oldStatus != None and oldStatus != self.status
-    
-class TrackList:
-    trackRequests: list[TrackRequest]
-    def __init__(self, trackRequests: list[TrackRequest] = []):
-        self.trackRequests = trackRequests
-    
-    def new_request(self, request: TrackRequest):
-        self.trackRequests.append(request)

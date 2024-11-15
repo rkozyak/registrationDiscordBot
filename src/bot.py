@@ -4,7 +4,7 @@ import asyncio
 from courses import Course
 from datetime import datetime
 
-from tracking import TrackRequest, TrackList
+from tracking import TrackRequest
 
 from token_fetcher import get_token
 from loader import load_request_list, save_request_list
@@ -32,14 +32,14 @@ async def track(ctx: commands.Context, crn: str):
     if ctx.guild is None:
         await ctx.reply("Error: Can only call $track from a channel in a server")
     else:
-        for request in global_request_list.trackRequests:
+        for request in global_request_list:
             if request.crn == crn and request.userId == ctx.author.id:
                 if request.channelId == ctx.channel.id:
                     await ctx.reply(f"You are already tracking CRN: {crn}")
                 else:
                     await ctx.reply(f"You are already tracking CRN: {crn} in channel <#{request.channelId}>")
                 return
-        global_request_list.new_request(TrackRequest(crn,"202502",ctx.author.id,ctx.channel.id))
+        global_request_list.append(TrackRequest(crn,"202502",ctx.author.id,ctx.channel.id))
             # await ctx.reply(f"Error retrieving CRN: `{crn}`")
             # return
         save_request_list(global_request_list)
@@ -48,7 +48,7 @@ async def track(ctx: commands.Context, crn: str):
 @bot.command()
 async def tracking(ctx: commands.Context):
     linked_requests: list[TrackRequest] = []
-    for request in global_request_list.trackRequests:
+    for request in global_request_list:
         if request.userId == ctx.author.id:
             linked_requests.append(request)
     if len(linked_requests) == 0:
@@ -61,9 +61,9 @@ async def tracking(ctx: commands.Context):
 
 @bot.command()
 async def untrack(ctx: commands.Context, crn: str):
-    for request in global_request_list.trackRequests:
+    for request in global_request_list:
         if request.userId == ctx.author.id and request.crn == crn:
-            global_request_list.trackRequests.remove(request)
+            global_request_list.remove(request)
             save_request_list(global_request_list)
             await ctx.reply(f"You are no longer tracking CRN {crn}")
             return
@@ -72,7 +72,7 @@ async def untrack(ctx: commands.Context, crn: str):
 @tasks.loop(seconds=10)
 async def check_crn():
     messages = []
-    for request in global_request_list.trackRequests:
+    for request in global_request_list:
         if request.fetch():
             text = (f"<@{request.userId}> course status changed:" 
             + "\n" + str(request.course))
