@@ -32,9 +32,14 @@ async def track(ctx: commands.Context, crn: str):
 async def check_crn():
     messages = []
     for request in global_request_list.trackRequests:
-        messages.append((request.channelId,str(request.fetch())))
+        if request.fetch():
+            text = (request.user.mention + " course status changed:" 
+            + "\n" + str(request.course))
+            messages.append((request.channelId,text))
+        print(request.course)
     for message in messages:
-        await bot.get_channel(message[0]).send(message[1])
+        await bot.get_channel(message[0]).send(message[1],
+                                               allowed_mentions=discord.AllowedMentions(users=True))
 
 @bot.listen()
 async def on_ready():

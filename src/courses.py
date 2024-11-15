@@ -2,12 +2,15 @@ import requests, time, platform
 from bs4 import BeautifulSoup
 import re
 
+import random
+
 class Course:
     def __init__(self, crn: str, term: str):
         self.crn = crn
         self.term = term # default
         url = 'https://oscar.gatech.edu/bprod/bwckschd.p_disp_detail_sched?term_in='
         url += self.term + '&crn_in=' + self.crn
+        """
         with requests.Session() as s:
             with s.get(url) as page:
                 soup = BeautifulSoup(page.content, 'html.parser')
@@ -20,6 +23,30 @@ class Course:
 
                 self.rawData = [int(info.getText()) for info in table.findAll('td', class_='dddefault')]
                 self.data = self.get_registration_info(self.rawData)
+        """
+        self.name = "TEST CLASS"
+        if random.randint(1,2) == 1:
+            self.data = {
+                'seats': 25,
+                'taken': 25,
+                'vacant': 0,
+                'waitlist': {
+                    'seats': 15,
+                    'taken': 13,
+                    'vacant': 2
+                }            
+            }
+        else:
+            self.data = {
+                'seats': 25,
+                'taken': 25,
+                'vacant': 0,
+                'waitlist': {
+                    'seats': 15,
+                    'taken': 15,
+                    'vacant': 0
+                }            
+            }
     
     def has_name(self) -> bool:
         return self.name != None
