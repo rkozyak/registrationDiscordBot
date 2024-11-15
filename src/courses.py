@@ -15,6 +15,12 @@ class Course:
             with s.get(url) as page:
                 soup = BeautifulSoup(page.content, 'html.parser')
                 headers = soup.find_all('th', class_="ddlabel")
+
+                if len(headers) == 0:
+                    self.name = "DOES NOT EXIST"
+                    self.data = self.get_failed_info()
+                    return
+
                 self.name = headers[0].getText()
 
                 table = soup.find('caption', string='Registration Availability').find_parent('table')
@@ -40,6 +46,20 @@ class Course:
             'seats': rawData[0],
             'taken': rawData[1],
             'vacant': rawData[2],
+            'waitlist': waitlist_data
+        }
+        return load
+
+    def get_failed_info(self):
+        waitlist_data = {
+            'seats': -1,
+            'taken': -1,
+            'vacant': -1
+        }
+        load = {
+            'seats': -1,
+            'taken': -1,
+            'vacant': -1,
             'waitlist': waitlist_data
         }
         return load

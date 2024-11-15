@@ -19,8 +19,13 @@ bot = commands.Bot(command_prefix='$', intents=discord.Intents.all())
 
 @bot.command()
 async def info(ctx: commands.Context, *crns):
-    course_info: list[str] = [str(Course(crn, "202502")) for crn in crns]
-    await ctx.send('\n'.join(course_info))
+    courses: list[Course] = [Course(crn, "202502") for crn in crns]
+    for course in courses:
+        if course.data['seats'] == -1:
+            await ctx.reply(f"Error retrieving CRN: `{course.crn}`")
+            return
+    course_info: list[str] = [str(course) for course in courses]
+    await ctx.reply('\n'.join(course_info))
 
 @bot.command()
 async def track(ctx: commands.Context, crn: str):
@@ -35,6 +40,8 @@ async def track(ctx: commands.Context, crn: str):
                     await ctx.reply(f"You are already tracking CRN: {crn} in channel <#{request.channelId}>")
                 return
         global_request_list.new_request(TrackRequest(crn,"202502",ctx.author.id,ctx.channel.id))
+            # await ctx.reply(f"Error retrieving CRN: `{crn}`")
+            # return
         save_request_list(global_request_list)
         await ctx.reply(f"Now tracking CRN: {crn}")
 
@@ -70,7 +77,6 @@ async def check_crn():
             text = (f"<@{request.userId}> course status changed:" 
             + "\n" + str(request.course))
             messages.append((request.channelId,text))
-        print(request.course)
     for message in messages:
         await bot.get_channel(message[0]).send(message[1],
                                                allowed_mentions=discord.AllowedMentions(users=True))
