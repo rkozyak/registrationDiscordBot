@@ -35,15 +35,15 @@ async def track(ctx: commands.Context, crn: str):
         for request in global_request_list:
             if request.crn == crn and request.userId == ctx.author.id:
                 if request.channelId == ctx.channel.id:
-                    await ctx.reply(f"You are already tracking CRN: {crn}")
+                    await ctx.reply(f"You are already tracking CRN: `{crn}`")
                 else:
-                    await ctx.reply(f"You are already tracking CRN: {crn} in channel <#{request.channelId}>")
+                    await ctx.reply(f"You are already tracking CRN: `{crn}` in channel <#{request.channelId}>")
                 return
         global_request_list.append(TrackRequest(crn,"202502",ctx.author.id,ctx.channel.id))
             # await ctx.reply(f"Error retrieving CRN: `{crn}`")
             # return
         save_request_list(global_request_list)
-        await ctx.reply(f"Now tracking CRN: {crn}")
+        await ctx.reply(f"Now tracking CRN: `{crn}`")
 
 @bot.command()
 async def tracking(ctx: commands.Context):
@@ -65,9 +65,9 @@ async def untrack(ctx: commands.Context, crn: str):
         if request.userId == ctx.author.id and request.crn == crn:
             global_request_list.remove(request)
             save_request_list(global_request_list)
-            await ctx.reply(f"You are no longer tracking CRN {crn}")
+            await ctx.reply(f"You are no longer tracking CRN: `{crn}`")
             return
-    await ctx.reply(f"You are not tracking CRN {crn}")
+    await ctx.reply(f"You are not tracking CRN: `{crn}`")
 
 @tasks.loop(seconds=10)
 async def check_crn():
