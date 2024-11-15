@@ -4,26 +4,40 @@ import asyncio
 from courses import Course
 from datetime import datetime
 
+from tracking import TrackRequest, TrackList
+
 from token_fetcher import get_token
 token = get_token()
 
 from discord.ext import commands
+from discord.ext import tasks
+
 bot = commands.Bot(command_prefix='$', intents=discord.Intents.all())
-
-def fetch_course(crn: str) -> str:
-    season = "spring"
-    now = datetime.now()
-    term = ''
-
-    if season.lower() == 'spring':
-        term = f'{now.year + 1}' + '02' if now.month > 4 else f'{now.year}' + '02'
-    else:
-        term = f'{now.year}' + '05' if season.lower() == 'summer' else f'{now.year}' + '08'
-    course = Course(crn, term)
-    return str(course)
+global_request_list = TrackList()
 
 @bot.command()
-async def info(ctx, crn):
-    await ctx.send(fetch_course(crn))
+async def info(ctx: commands.Context, *crns):
+    course_info: list[str] = [str(Course(crn, "202502")) for crn in crns]
+    await ctx.send('\n'.join(course_info))
+
+@bot.command()
+async def track(ctx: commands.Context, crn: str):
+    if ctx.guild is None:
+        await ctx.reply("Error: Can only call $track from a channel in a server")
+    else:
+        global_request_list.new_request(TrackRequest(crn,"202502",ctx.author,ctx.channel.id))
+        await ctx.reply("Now tracking CRN: " + crn + " for user " + ctx.author.name)
+
+@tasks.loop(seconds=10)
+async def check_crn():
+    messages = []
+    for request in global_request_list.trackRequests:
+        messages.append((request.channelId,str(request.fetch())))
+    for message in messages:
+        await bot.get_channel(message[0]).send(message[1])
+
+@bot.listen()
+async def on_ready():
+    check_crn.start()
 
 bot.run(token)
