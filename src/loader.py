@@ -3,13 +3,15 @@ from tracking import TrackRequest
 
 
 def load_request_list() -> list[TrackRequest]:
-    with open("saved_requests.json", 'r') as file:
-        data = json.load(file)
-        trackList = []
-        for item in data:
-            trackList.append(TrackRequest(item['crn'],item['term'],item['userId'],item['channelId']))
-            print(item)
-    return trackList
+    try:
+        with open("saved_requests.json", 'r') as file:
+            data = json.load(file)
+            trackList = []
+            for item in data:
+                trackList.append(TrackRequest(item['crn'],item['term'],item['userId'],item['channelId']))
+            return trackList
+    except:
+        return []
 
 def save_request_list(trackList: list[TrackRequest]):
     json_obj = []
