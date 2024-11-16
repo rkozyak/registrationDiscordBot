@@ -22,7 +22,7 @@ bot = commands.Bot(command_prefix='$', intents=discord.Intents.all())
 async def info(ctx: commands.Context, *crns):
     print(f"\"{ctx.message.content}\" from user {ctx.author.name}")
     if len(crns) == 0:
-        await ctx.reply(f"Error: Please specify at least one CRN")
+        await ctx.reply(f"Error: Please specify at least one CRN", mention_author=False)
         return
     courses: list[Course] = [Course(crn, "202502") for crn in crns]
     successfulCourses = []
@@ -36,16 +36,16 @@ async def info(ctx: commands.Context, *crns):
     if len(failedCrns) > 0:
         failedCrns = [f"`{crn}`" for crn in failedCrns]
         message += "Error: Could not retrieve CRN{}: {}\n".format("s" if len(failedCrns) > 1 else "", ", ".join(failedCrns))
-    await ctx.reply(message)
+    await ctx.reply(message, mention_author=False)
 
 @bot.command()
 async def track(ctx: commands.Context, *crns):
     print(f"\"{ctx.message.content}\" from user {ctx.author.name}")
     if ctx.guild is None:
-        await ctx.reply("Error: Can only call $track from a channel in a server")
+        await ctx.reply("Error: Can only call $track from a channel in a server", mention_author=False)
         return
     if len(crns) == 0:
-        await ctx.reply(f"Error: Please specify at least one CRN")
+        await ctx.reply(f"Error: Please specify at least one CRN", mention_author=False)
         return
     
     successCrns = []
@@ -78,7 +78,7 @@ async def track(ctx: commands.Context, *crns):
     if len(failedCrns) > 0:
         failedCrns = [f"`{crn}`" for crn in failedCrns]
         message += "Error: Could not retrieve CRN{}: {}\n".format("s" if len(failedCrns) > 1 else "", ", ".join(failedCrns))
-    await ctx.reply(message)
+    await ctx.reply(message, mention_author=False)
 
 @bot.command()
 async def tracking(ctx: commands.Context):
@@ -88,18 +88,18 @@ async def tracking(ctx: commands.Context):
         if request.userId == ctx.author.id:
             linked_requests.append(request)
     if len(linked_requests) == 0:
-        await ctx.reply("You are not tracking any courses")
+        await ctx.reply("You are not tracking any courses", mention_author=False)
     else:
         message = "You are tracking:\n"
         for request in linked_requests:
             message += f"`{request.course.name}`\n"
-        await ctx.reply(message)
+        await ctx.reply(message, mention_author=False)
 
 @bot.command()
 async def untrack(ctx: commands.Context, *crns):
     print(f"\"{ctx.message.content}\" from user {ctx.author.name}")
     if len(crns) == 0:
-        await ctx.reply(f"Error: Please specify at least one CRN")
+        await ctx.reply(f"Error: Please specify at least one CRN", mention_author=False)
         return
     successCrns = []
     failedCrns = []
@@ -127,7 +127,7 @@ async def untrack(ctx: commands.Context, *crns):
     if len(failedCrns) > 0:
         failedCrns = [f"`{crn}`" for crn in failedCrns]
         message += "Error: You are not tracking CRN{}: {}\n".format("s" if len(failedCrns) > 1 else "", ", ".join(failedCrns))
-    await ctx.reply(message)
+    await ctx.reply(message, mention_author=False)
 
 bot.remove_command('help')
 @bot.command()
@@ -142,7 +142,7 @@ async def help(ctx: commands.Context):
         `$untrack CRN1 CRN2 ...` Removes one or more CRNs from your tracking list.
         `$untrack all` Removes all CRNs from your tracking list.
         `$tracking` Displays all the courses you are tracking.
-    """)
+    """, mention_author=False)
 
 @tasks.loop(seconds=10)
 async def check_crn():
