@@ -1,8 +1,5 @@
-import requests, time, platform
+import requests
 from bs4 import BeautifulSoup
-import re
-
-import random
 
 class Course:
     name: str
