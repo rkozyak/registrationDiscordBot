@@ -3,6 +3,7 @@ import asyncio
 
 from courses import Course
 from datetime import datetime
+import threading
 
 from tracking import TrackRequest
 
@@ -104,7 +105,6 @@ async def untrack(ctx: commands.Context, *crns):
     failedCrns = []
     if crns[0] == "all":
         for request in global_request_list[:]:
-            print(f"Checking CRN {request.crn}")
             if request.userId == ctx.author.id:
                 global_request_list.remove(request)
                 successCrns.append(request.crn)
@@ -146,15 +146,24 @@ async def help(ctx: commands.Context):
 
 @tasks.loop(seconds=10)
 async def check_crn():
+    tstart = datetime.now()
+    threads = [threading.Thread(target=request.fetch) for request in global_request_list]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
     messages = []
     for request in global_request_list:
-        if request.fetch():
+        if request.statusChanged:
             text = f"<@{request.userId}> course status changed:\n```\n{str(request.course)}```" 
             messages.append((request.channelId,text))
-        print(f"Scraped {request.course.name}")
+        # print(f"Scraped {request.course.name}")
     for message in messages:
         await bot.get_channel(message[0]).send(message[1],
                                                allowed_mentions=discord.AllowedMentions(users=True))
+    tend = datetime.now()
+    telapsed = tend - tstart
+    print(f"Scraped {str(len(global_request_list))} courses in {telapsed.total_seconds()}s")
 
 @bot.listen()
 async def on_ready():

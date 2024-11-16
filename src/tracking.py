@@ -15,6 +15,7 @@ class TrackRequest:
     channelId: int
     status: TrackStatus
     course: Course
+    statusChanged: bool
 
     def __init__(self, crn: str, term: str, userId: int, channelId: int):
         self.crn = crn
@@ -34,4 +35,5 @@ class TrackRequest:
             self.status = TrackStatus.CLASS_CLOSED_WAITLIST_OPEN
         else:
             self.status = TrackStatus.CLASS_CLOSED_WAITLIST_CLOSED
-        return oldStatus != None and oldStatus != self.status
+        self.statusChanged = oldStatus != None and oldStatus != self.status
+        return self.statusChanged
