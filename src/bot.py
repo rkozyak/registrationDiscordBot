@@ -96,17 +96,24 @@ async def untrack(ctx: commands.Context, *crns):
         return
     successCrns = []
     failedCrns = []
-    for crn in crns:
-        foundCRN = False
-        for request in global_request_list:
-            if request.userId == ctx.author.id and request.crn == crn:
+    if crns[0] == "all":
+        for request in global_request_list[:]:
+            print(f"Checking CRN {request.crn}")
+            if request.userId == ctx.author.id:
                 global_request_list.remove(request)
-                save_request_list(global_request_list)
-                foundCRN = True
-                successCrns.append(crn)
-                break
-        if not foundCRN:
-            failedCrns.append(crn)
+                successCrns.append(request.crn)
+    else:
+        for crn in crns:
+            foundCRN = False
+            for request in global_request_list:
+                if request.userId == ctx.author.id and request.crn == crn:
+                    global_request_list.remove(request)
+                    foundCRN = True
+                    successCrns.append(crn)
+                    break
+            if not foundCRN:
+                failedCrns.append(crn)
+    save_request_list(global_request_list)
     message = ""
     if len(successCrns) > 0:
         successCrns = [f"`{crn}`" for crn in successCrns]
@@ -126,7 +133,8 @@ async def help(ctx: commands.Context):
         `$help`: Displays all commands.
         `$info CRN1 CRN2 ...` Displays info about one or more CRNs.
         `$track CRN1 CRN2 ...` Adds one or more CRNs to be tracked. User will be pinged when the status changes.
-        `$untrack CRN` Removes a CRN from your tracking list.
+        `$untrack CRN1 CRN2 ...` Removes one or more CRNs from your tracking list.
+        `$untrack all` Removes all CRNs from your tracking list.
         `$tracking` Displays all the courses you are tracking.
     """)
 
