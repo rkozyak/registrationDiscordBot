@@ -91,7 +91,7 @@ async def tracking(ctx: commands.Context):
     else:
         message = "You are tracking:\n"
         for request in linked_requests:
-            message += f"{request.course.name}\n"
+            message += f"`{request.course.name}`\n"
         await ctx.reply(message)
 
 @bot.command()
