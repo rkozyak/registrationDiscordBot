@@ -89,18 +89,32 @@ async def tracking(ctx: commands.Context):
         await ctx.reply(message)
 
 @bot.command()
-async def untrack(ctx: commands.Context, crn: str = None):
+async def untrack(ctx: commands.Context, *crns):
     print(f"\"{ctx.message.content}\" from user {ctx.author.name}")
-    if crn is None:
-        await ctx.reply("Please specify a CRN")
+    if len(crns) == 0:
+        await ctx.reply(f"Please specify at least one CRN")
         return
-    for request in global_request_list:
-        if request.userId == ctx.author.id and request.crn == crn:
-            global_request_list.remove(request)
-            save_request_list(global_request_list)
-            await ctx.reply(f"You are no longer tracking CRN: `{crn}`")
-            return
-    await ctx.reply(f"You are not tracking CRN: `{crn}`")
+    successCrns = []
+    failedCrns = []
+    for crn in crns:
+        foundCRN = False
+        for request in global_request_list:
+            if request.userId == ctx.author.id and request.crn == crn:
+                global_request_list.remove(request)
+                save_request_list(global_request_list)
+                foundCRN = True
+                successCrns.append(crn)
+                break
+        if not foundCRN:
+            failedCrns.append(crn)
+    message = ""
+    if len(successCrns) > 0:
+        successCrns = [f"`{crn}`" for crn in successCrns]
+        message += "You are no longer tracking CRN{}: {}\n".format("s" if len(successCrns) > 1 else "", ", ".join(successCrns))
+    if len(failedCrns) > 0:
+        failedCrns = [f"`{crn}`" for crn in failedCrns]
+        message += "You are not tracking CRN{}: {}\n".format("s" if len(failedCrns) > 1 else "", ", ".join(failedCrns))
+    await ctx.reply(message)
 
 bot.remove_command('help')
 @bot.command()
