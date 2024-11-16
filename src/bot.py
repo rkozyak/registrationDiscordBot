@@ -22,7 +22,7 @@ async def info(ctx: commands.Context, *crns):
     print(f"\"{ctx.message.content}\" from user {ctx.author.name}")
     if len(crns) == 0:
         await ctx.reply(f"Please specify at least one CRN")
-        return        
+        return
     courses: list[Course] = [Course(crn, "202502") for crn in crns]
     for course in courses:
         if course.data['seats'] == -1:
@@ -32,29 +32,46 @@ async def info(ctx: commands.Context, *crns):
     await ctx.reply('\n'.join(course_info))
 
 @bot.command()
-async def track(ctx: commands.Context, crn: str = None):
+async def track(ctx: commands.Context, *crns):
     print(f"\"{ctx.message.content}\" from user {ctx.author.name}")
     if ctx.guild is None:
         await ctx.reply("Can only call $track from a channel in a server")
         return
-    if crn is None:
-        await ctx.reply("Please specify a CRN")
+    if len(crns) == 0:
+        await ctx.reply(f"Please specify at least one CRN")
         return
-    for request in global_request_list:
-        if request.crn == crn and request.userId == ctx.author.id:
-            if request.channelId == ctx.channel.id:
-                await ctx.reply(f"You are already tracking CRN: `{crn}`")
-            else:
-                await ctx.reply(f"You are already tracking CRN: `{crn}` in channel <#{request.channelId}>")
-            return
-    newRequest = TrackRequest(crn,"202502",ctx.author.id,ctx.channel.id)
-    if newRequest.course.data['seats'] == -1:
-        await ctx.reply(f"Error retrieving CRN: `{crn}`")
-        return
-    else:
-        global_request_list.append(newRequest)
-        save_request_list(global_request_list)
-        await ctx.reply(f"Now tracking CRN: `{crn}`")
+    
+    successCrns = []
+    alreadyTrackingCrns = []
+    failedCrns = []
+
+    for crn in crns:
+        alreadyTracking = False
+        for request in global_request_list:
+            if request.crn == crn and request.userId == ctx.author.id:
+                alreadyTrackingCrns.append(crn)
+                alreadyTracking = True
+                break
+        if alreadyTracking:
+            continue
+        newRequest = TrackRequest(crn,"202502",ctx.author.id,ctx.channel.id)
+        if newRequest.course.data['seats'] == -1:
+            failedCrns.append(crn)
+        else:
+            global_request_list.append(newRequest)
+            save_request_list(global_request_list)
+            successCrns.append(crn)
+    message = ""
+    if len(successCrns) > 0:
+        successCrns = [f"`{crn}`" for crn in successCrns]
+        message += "Now tracking CRN{}: {}\n".format("s" if len(successCrns) > 1 else "", ", ".join(successCrns))
+    if len(alreadyTrackingCrns) > 0:
+        alreadyTrackingCrns = [f"`{crn}`" for crn in alreadyTrackingCrns]
+        message += "You are already tracking CRN{}: {}\n".format("s" if len(alreadyTrackingCrns) > 1 else "", ", ".join(alreadyTrackingCrns))
+    if len(failedCrns) > 0:
+        failedCrns = [f"`{crn}`" for crn in failedCrns]
+        message += "Error retrieving CRN{}: {}\n".format("s" if len(failedCrns) > 1 else "", ", ".join(failedCrns))
+    await ctx.reply(message)
 
 @bot.command()
 async def tracking(ctx: commands.Context):
@@ -94,7 +111,7 @@ async def help(ctx: commands.Context):
     Commands:
         `$help`: Displays all commands.
         `$info CRN1 CRN2 ...` Displays info about one or more CRNs.
-        `$track CRN` Adds a CRN to be tracked. User will be pinged when the status changes.
+        `$track CRN1 CRN2 ...` Adds one or more CRNs to be tracked. User will be pinged when the status changes.
         `$untrack CRN` Removes a CRN from your tracking list.
         `$tracking` Displays all the courses you are tracking.
     """)
