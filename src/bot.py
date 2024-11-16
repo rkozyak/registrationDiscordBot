@@ -21,12 +21,12 @@ bot = commands.Bot(command_prefix='$', intents=discord.Intents.all())
 async def info(ctx: commands.Context, *crns):
     print(f"\"{ctx.message.content}\" from user {ctx.author.name}")
     if len(crns) == 0:
-        await ctx.reply(f"Please specify at least one CRN")
+        await ctx.reply(f"Error: Please specify at least one CRN")
         return
     courses: list[Course] = [Course(crn, "202502") for crn in crns]
     for course in courses:
         if course.data['seats'] == -1:
-            await ctx.reply(f"Error retrieving CRN: `{course.crn}`")
+            await ctx.reply(f"Error: Could not retrieve CRN: `{course.crn}`")
             return
     course_info: list[str] = [str(course) for course in courses]
     await ctx.reply('\n'.join(course_info))
@@ -35,10 +35,10 @@ async def info(ctx: commands.Context, *crns):
 async def track(ctx: commands.Context, *crns):
     print(f"\"{ctx.message.content}\" from user {ctx.author.name}")
     if ctx.guild is None:
-        await ctx.reply("Can only call $track from a channel in a server")
+        await ctx.reply("Error: Can only call $track from a channel in a server")
         return
     if len(crns) == 0:
-        await ctx.reply(f"Please specify at least one CRN")
+        await ctx.reply(f"Error: Please specify at least one CRN")
         return
     
     successCrns = []
@@ -67,10 +67,10 @@ async def track(ctx: commands.Context, *crns):
         message += "Now tracking CRN{}: {}\n".format("s" if len(successCrns) > 1 else "", ", ".join(successCrns))
     if len(alreadyTrackingCrns) > 0:
         alreadyTrackingCrns = [f"`{crn}`" for crn in alreadyTrackingCrns]
-        message += "You are already tracking CRN{}: {}\n".format("s" if len(alreadyTrackingCrns) > 1 else "", ", ".join(alreadyTrackingCrns))
+        message += "Error: You are already tracking CRN{}: {}\n".format("s" if len(alreadyTrackingCrns) > 1 else "", ", ".join(alreadyTrackingCrns))
     if len(failedCrns) > 0:
         failedCrns = [f"`{crn}`" for crn in failedCrns]
-        message += "Error retrieving CRN{}: {}\n".format("s" if len(failedCrns) > 1 else "", ", ".join(failedCrns))
+        message += "Error: Could not retrieve CRN{}: {}\n".format("s" if len(failedCrns) > 1 else "", ", ".join(failedCrns))
     await ctx.reply(message)
 
 @bot.command()
@@ -92,7 +92,7 @@ async def tracking(ctx: commands.Context):
 async def untrack(ctx: commands.Context, *crns):
     print(f"\"{ctx.message.content}\" from user {ctx.author.name}")
     if len(crns) == 0:
-        await ctx.reply(f"Please specify at least one CRN")
+        await ctx.reply(f"Error: Please specify at least one CRN")
         return
     successCrns = []
     failedCrns = []
@@ -113,7 +113,7 @@ async def untrack(ctx: commands.Context, *crns):
         message += "You are no longer tracking CRN{}: {}\n".format("s" if len(successCrns) > 1 else "", ", ".join(successCrns))
     if len(failedCrns) > 0:
         failedCrns = [f"`{crn}`" for crn in failedCrns]
-        message += "You are not tracking CRN{}: {}\n".format("s" if len(failedCrns) > 1 else "", ", ".join(failedCrns))
+        message += "Error: You are not tracking CRN{}: {}\n".format("s" if len(failedCrns) > 1 else "", ", ".join(failedCrns))
     await ctx.reply(message)
 
 bot.remove_command('help')
