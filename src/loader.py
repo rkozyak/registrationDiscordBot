@@ -4,7 +4,7 @@ from tracking import TrackRequest
 
 def load_request_list() -> list[TrackRequest]:
     try:
-        with open("saved_requests.json", 'r') as file:
+        with open("/var/data/saved_requests.json", 'r') as file:
             data = json.load(file)
             trackList = []
             for item in data:
@@ -23,5 +23,5 @@ def save_request_list(trackList: list[TrackRequest]):
             'channelId': request.channelId
         })
     json_encoded = json.dumps(json_obj)
-    with open('saved_requests.json', 'w') as file:
+    with open('/var/data/saved_requests.json', 'w') as file:
         file.write(json_encoded)
