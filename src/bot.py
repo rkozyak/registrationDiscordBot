@@ -24,12 +24,18 @@ async def info(ctx: commands.Context, *crns):
         await ctx.reply(f"Error: Please specify at least one CRN")
         return
     courses: list[Course] = [Course(crn, "202502") for crn in crns]
+    successfulCourses = []
+    failedCrns = []
     for course in courses:
         if course.data['seats'] == -1:
-            await ctx.reply(f"Error: Could not retrieve CRN: `{course.crn}`")
-            return
-    course_info: list[str] = [str(course) for course in courses]
-    await ctx.reply('\n'.join(course_info))
+            failedCrns.append(course.crn)
+        else:
+            successfulCourses.append(f"```\n{str(course)}```")
+    message = '\n'.join(successfulCourses)
+    if len(failedCrns) > 0:
+        failedCrns = [f"`{crn}`" for crn in failedCrns]
+        message += "Error: Could not retrieve CRN{}: {}\n".format("s" if len(failedCrns) > 1 else "", ", ".join(failedCrns))
+    await ctx.reply(message)
 
 @bot.command()
 async def track(ctx: commands.Context, *crns):
@@ -143,8 +149,7 @@ async def check_crn():
     messages = []
     for request in global_request_list:
         if request.fetch():
-            text = (f"<@{request.userId}> course status changed:" 
-            + "\n" + str(request.course))
+            text = f"<@{request.userId}> course status changed:\n```\n{str(request.course)}```" 
             messages.append((request.channelId,text))
         print(f"Scraped {request.course.name}")
     for message in messages:
