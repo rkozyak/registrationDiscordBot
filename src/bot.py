@@ -24,6 +24,7 @@ async def info(ctx: commands.Context, *crns):
     if len(crns) == 0:
         await ctx.reply(f"Error: Please specify at least one CRN", mention_author=False)
         return
+    crns = list(dict.fromkeys(crns)) #de-duplicate
     courses: list[Course] = [Course(crn, "202502") for crn in crns]
     successfulCourses = []
     failedCrns = []
@@ -47,7 +48,8 @@ async def track(ctx: commands.Context, *crns):
     if len(crns) == 0:
         await ctx.reply(f"Error: Please specify at least one CRN", mention_author=False)
         return
-    
+    crns = list(dict.fromkeys(crns)) #de-duplicate
+
     successCrns = []
     alreadyTrackingCrns = []
     failedCrns = []
@@ -101,6 +103,7 @@ async def untrack(ctx: commands.Context, *crns):
     if len(crns) == 0:
         await ctx.reply(f"Error: Please specify at least one CRN", mention_author=False)
         return
+    crns = list(dict.fromkeys(crns)) #de-duplicate
     successCrns = []
     failedCrns = []
     if crns[0] == "all":
