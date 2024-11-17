@@ -1,6 +1,7 @@
 import json
 from tracking import TrackRequest
 
+from datetime import datetime
 import threading
 
 def load_request_list() -> list[TrackRequest]:
@@ -8,6 +9,7 @@ def load_request_list() -> list[TrackRequest]:
         with open("/var/data/saved_requests.json", 'r') as file:
             data = json.load(file)
             trackList = []
+            tstart = datetime.now()
             def load_request(item):
                 trackList.append(TrackRequest(item['crn'],item['term'],item['userId'],item['channelId']))
             threads = [threading.Thread(target=load_request,args=(item,)) for item in data]
@@ -15,6 +17,9 @@ def load_request_list() -> list[TrackRequest]:
                 t.start()
             for t in threads:
                 t.join()
+            tend = datetime.now()
+            tdelta = tend - tstart
+            print(f"Loaded {len(trackList)} requests in {tdelta.total_seconds()}s")
             return trackList
     except:
         return []
