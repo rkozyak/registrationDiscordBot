@@ -65,15 +65,17 @@ async def track(ctx: commands.Context, *crns):
     failedCrns = []
 
     def attempt_track(crn):
-        alreadyTracking = False
         for request in global_request_list:
-            if request.crn == crn and request.userId == ctx.author.id:
-                alreadyTrackingCrns.append(crn)
-                alreadyTracking = True
-                break
-        if alreadyTracking:
-            return
-        newRequest = TrackRequest(crn,"202502",ctx.author.id,ctx.channel.id)
+            if request.crn == crn:
+                if ctx.author.id in request.userIds:
+                    alreadyTrackingCrns.append(crn)
+                    return
+                else:
+                    request.userIds.append(ctx.author.id)
+                    request.channelIds.append(ctx.channel.id)
+                    successCrns.append(crn)
+                    return
+        newRequest = TrackRequest(crn,"202502",[ctx.author.id],[ctx.channel.id])
         if newRequest.course.data['seats'] == -1:
             failedCrns.append(crn)
         else:
@@ -102,7 +104,7 @@ async def tracking(ctx: commands.Context):
     print(f"\"{ctx.message.content}\" from user {ctx.author.name}")
     linked_requests: list[TrackRequest] = []
     for request in global_request_list:
-        if request.userId == ctx.author.id:
+        if ctx.author.id in request.userIds:
             linked_requests.append(request)
     if len(linked_requests) == 0:
         await ctx.reply("You are not tracking any courses", mention_author=False)
@@ -123,7 +125,7 @@ async def untrack(ctx: commands.Context, *crns):
     failedCrns = []
     if crns[0] == "all":
         for request in global_request_list[:]:
-            if request.userId == ctx.author.id:
+            if ctx.author.id in request.userIds:
                 global_request_list.remove(request)
                 successCrns.append(request.crn)
         if len(successCrns) == 0:
@@ -133,7 +135,7 @@ async def untrack(ctx: commands.Context, *crns):
         for crn in crns:
             foundCRN = False
             for request in global_request_list:
-                if request.userId == ctx.author.id and request.crn == crn:
+                if ctx.author.id in request.userIds and request.crn == crn:
                     global_request_list.remove(request)
                     foundCRN = True
                     successCrns.append(crn)
@@ -173,17 +175,27 @@ async def check_crn():
         t.start()
     for t in threads:
         t.join()
-    messages = []
-    for request in global_request_list:
-        if request.statusChanged:
-            text = f"<@{request.userId}> course status changed:\n```\n{str(request.course)}```" 
-            messages.append((request.channelId,text))
-    for message in messages:
-        await bot.get_channel(message[0]).send(message[1],
-                                               allowed_mentions=discord.AllowedMentions(users=True))
     tend = datetime.now()
     telapsed = tend - tstart
     print(f"Scraped {str(len(global_request_list))} courses in {telapsed.total_seconds()}s")
+    messages = []
+    for request in global_request_list:
+        if request.statusChanged:
+            channels = {}
+            for i in range(len(request.userIds)):
+                userId = request.userIds[i]
+                channelId = request.channelIds[i]
+                if channelId in channels:
+                    channels[channelId].append(userId)
+                else:
+                    channels[channelId] = [userId]
+            for channelId, userIds in channels.items():
+                mentions = [f"<@{userId}>" for userId in userIds]
+                text = f"{' '.join(mentions)} course status changed:\n```\n{str(request.course)}```" 
+                messages.append((channelId,text))
+    for message in messages:
+        await bot.get_channel(message[0]).send(message[1],
+                                               allowed_mentions=discord.AllowedMentions(users=True))
 
 @bot.listen()
 async def on_ready():

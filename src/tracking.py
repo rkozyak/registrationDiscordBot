@@ -11,17 +11,17 @@ class TrackStatus(Enum):
 class TrackRequest:
     crn: str
     term: str
-    userId: int
-    channelId: int
+    userIds: list[int]
+    channelIds: list[int] # order matters, channels paired to users
     status: TrackStatus
     course: Course
     statusChanged: bool
 
-    def __init__(self, crn: str, term: str, userId: int, channelId: int):
+    def __init__(self, crn: str, term: str, userIds: list[int], channelIds: list[int]):
         self.crn = crn
         self.term = term
-        self.userId = userId
-        self.channelId = channelId
+        self.userIds = userIds
+        self.channelIds = channelIds
         self.status = None
         self.fetch()
 
