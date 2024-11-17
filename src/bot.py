@@ -80,13 +80,14 @@ async def track(ctx: commands.Context, *crns):
             failedCrns.append(crn)
         else:
             global_request_list.append(newRequest)
-            save_request_list(global_request_list)
             successCrns.append(crn)
     threads = [threading.Thread(target=attempt_track,args=(crn,)) for crn in crns]
     for t in threads:
         t.start()
     for t in threads:
         t.join()
+    if len(successCrns) > 0:
+        save_request_list(global_request_list)
     message = ""
     if len(successCrns) > 0:
         successCrns = [f"`{crn}`" for crn in successCrns]
