@@ -44,7 +44,10 @@ async def info(ctx: commands.Context, *crns):
     if len(failedCrns) > 0:
         failedCrns = [f"`{crn}`" for crn in failedCrns]
         message += "Error: Could not retrieve CRN{}: {}\n".format("s" if len(failedCrns) > 1 else "", ", ".join(failedCrns))
-    await ctx.reply(message, mention_author=False)
+    if len(message) > 2000:
+        await ctx.reply("Error: Message longer than 2000 characters. Request fewer CRNs!", mention_author=False)
+    else:
+        await ctx.reply(message, mention_author=False)
 
 @bot.command()
 async def track(ctx: commands.Context, *crns):
@@ -123,6 +126,9 @@ async def untrack(ctx: commands.Context, *crns):
             if request.userId == ctx.author.id:
                 global_request_list.remove(request)
                 successCrns.append(request.crn)
+        if len(successCrns) == 0:
+            await ctx.reply("You are not tracking any CRNs")
+            return
     else:
         for crn in crns:
             foundCRN = False
@@ -172,7 +178,6 @@ async def check_crn():
         if request.statusChanged:
             text = f"<@{request.userId}> course status changed:\n```\n{str(request.course)}```" 
             messages.append((request.channelId,text))
-        # print(f"Scraped {request.course.name}")
     for message in messages:
         await bot.get_channel(message[0]).send(message[1],
                                                allowed_mentions=discord.AllowedMentions(users=True))
