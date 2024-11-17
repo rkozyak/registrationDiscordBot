@@ -187,6 +187,7 @@ async def check_crn():
 
 @bot.listen()
 async def on_ready():
-    check_crn.start()
+    if not check_crn.is_running():
+        check_crn.start()
 
 bot.run(token)
