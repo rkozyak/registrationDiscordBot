@@ -25,7 +25,14 @@ async def info(ctx: commands.Context, *crns):
         await ctx.reply(f"Error: Please specify at least one CRN", mention_author=False)
         return
     crns = list(dict.fromkeys(crns)) #de-duplicate
-    courses: list[Course] = [Course(crn, "202502") for crn in crns]
+    courses = []
+    def fetch_info(crn):
+        courses.append(Course(crn, "202502"))
+    threads = [threading.Thread(target=fetch_info,args=(crn,)) for crn in crns]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
     successfulCourses = []
     failedCrns = []
     for course in courses:
@@ -54,7 +61,7 @@ async def track(ctx: commands.Context, *crns):
     alreadyTrackingCrns = []
     failedCrns = []
 
-    for crn in crns:
+    def attempt_track(crn):
         alreadyTracking = False
         for request in global_request_list:
             if request.crn == crn and request.userId == ctx.author.id:
@@ -62,7 +69,7 @@ async def track(ctx: commands.Context, *crns):
                 alreadyTracking = True
                 break
         if alreadyTracking:
-            continue
+            return
         newRequest = TrackRequest(crn,"202502",ctx.author.id,ctx.channel.id)
         if newRequest.course.data['seats'] == -1:
             failedCrns.append(crn)
@@ -70,6 +77,11 @@ async def track(ctx: commands.Context, *crns):
             global_request_list.append(newRequest)
             save_request_list(global_request_list)
             successCrns.append(crn)
+    threads = [threading.Thread(target=attempt_track,args=(crn,)) for crn in crns]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
     message = ""
     if len(successCrns) > 0:
         successCrns = [f"`{crn}`" for crn in successCrns]
