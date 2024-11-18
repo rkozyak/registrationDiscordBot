@@ -24,32 +24,58 @@ bot = commands.Bot(command_prefix='$', intents=discord.Intents.all())
 async def info(ctx: commands.Context, *crns):
     print(f"\"{ctx.message.content}\" from user {ctx.author.name}")
     if len(crns) == 0:
-        await ctx.reply(f"Error: Please specify at least one CRN", mention_author=False)
+        await ctx.reply("Error: Please specify at least one CRN", mention_author=False)
         return
-    crns = list(dict.fromkeys(crns)) #de-duplicate
+    crns = list(dict.fromkeys(crns))  # de-duplicate
     courses = []
+
     def fetch_info(crn):
         courses.append(Course(crn, "202502"))
-    threads = [threading.Thread(target=fetch_info,args=(crn,)) for crn in crns]
+
+    threads = [threading.Thread(target=fetch_info, args=(crn,)) for crn in crns]
     for t in threads:
         t.start()
     for t in threads:
         t.join()
-    successfulCourses = []
-    failedCrns = []
+
+    successful_courses = []
+    failed_crns = []
+
     for course in courses:
         if course.data['seats'] == -1:
-            failedCrns.append(course.crn)
+            failed_crns.append(course.crn)
         else:
-            successfulCourses.append(f"```\n{str(course)}```")
-    message = '\n'.join(successfulCourses)
-    if len(failedCrns) > 0:
-        failedCrns = [f"`{crn}`" for crn in failedCrns]
-        message += "Error: Could not retrieve CRN{}: {}\n".format("s" if len(failedCrns) > 1 else "", ", ".join(failedCrns))
-    if len(message) > 2000:
-        await ctx.reply("Error: Message longer than 2000 characters. Request fewer CRNs!", mention_author=False)
+            successful_courses.append(course)
+
+    embed = discord.Embed(
+        title="Course Information",
+        color=discord.Color.blue(),
+    )
+
+    if successful_courses:
+        for course in successful_courses:
+            embed.add_field(
+                name=f"{course.name} - {course.crn}",
+                value=(
+                    f"Seats: **{course.data['seats']}**\n"
+                    f"Taken: **{course.data['taken']}**\n"
+                    f"Vacant: **{course.data['vacant']}**\n"
+                    f"Waitlist Open: **{'Yes' if course.data.get('waitlist_open', False) else 'No'}**"
+                ),
+                inline=False
+            )
+
+    if failed_crns:
+        embed.add_field(
+            name="Failed to Retrieve",
+            value=", ".join(f"`{crn}`" for crn in failed_crns),
+            inline=False
+        )
+
+    if not successful_courses and not failed_crns:
+        await ctx.reply("No valid course information found.", mention_author=False)
     else:
-        await ctx.reply(message, mention_author=False)
+        await ctx.reply(embed=embed, mention_author=False)
 
 @bot.command()
 async def track(ctx: commands.Context, *crns):
@@ -60,7 +86,7 @@ async def track(ctx: commands.Context, *crns):
     if len(crns) == 0:
         await ctx.reply(f"Error: Please specify at least one CRN", mention_author=False)
         return
-    crns = list(dict.fromkeys(crns)) #de-duplicate
+    crns = list(dict.fromkeys(crns))  # de-duplicate
 
     successCrns = []
     alreadyTrackingCrns = []
@@ -79,7 +105,7 @@ async def track(ctx: commands.Context, *crns):
             else:
                 user_dict[ctx.author.id] = [crn]
             return
-        newRequest = TrackRequest(crn,"202502",[ctx.author.id],[ctx.channel.id])
+        newRequest = TrackRequest(crn, "202502", [ctx.author.id], [ctx.channel.id])
         if newRequest.course.data['seats'] == -1:
             failedCrns.append(crn)
         else:
@@ -90,39 +116,86 @@ async def track(ctx: commands.Context, *crns):
                 user_dict[ctx.author.id].append(crn)
             else:
                 user_dict[ctx.author.id] = [crn]
-    threads = [threading.Thread(target=attempt_track,args=(crn,)) for crn in crns]
+
+    threads = [threading.Thread(target=attempt_track, args=(crn,)) for crn in crns]
     for t in threads:
         t.start()
     for t in threads:
         t.join()
+
     if len(successCrns) > 0:
         save_request_list(global_request_list)
-    message = ""
+
+    embed = discord.Embed(
+        title="Tracking Status",
+        color=discord.Color.green() if len(successCrns) > 0 else discord.Color.red()
+    )
+
+    # Success message
     if len(successCrns) > 0:
         successCrns = [f"`{crn}`" for crn in successCrns]
-        message += "Now tracking CRN{}: {}\n".format("s" if len(successCrns) > 1 else "", ", ".join(successCrns))
+        embed.add_field(
+            name="Now Tracking CRNs",
+            value=f"Now tracking CRN{'s' if len(successCrns) > 1 else ''}: {', '.join(successCrns)}",
+            inline=False
+        )
+
+    # Already tracking message
     if len(alreadyTrackingCrns) > 0:
         alreadyTrackingCrns = [f"`{crn}`" for crn in alreadyTrackingCrns]
-        message += "Error: You are already tracking CRN{}: {}\n".format("s" if len(alreadyTrackingCrns) > 1 else "", ", ".join(alreadyTrackingCrns))
+        embed.add_field(
+            name="Already Tracking CRNs",
+            value=f"You are already tracking CRN{'s' if len(alreadyTrackingCrns) > 1 else ''}: {', '.join(alreadyTrackingCrns)}",
+            inline=False
+        )
+
+    # Failure message
     if len(failedCrns) > 0:
         failedCrns = [f"`{crn}`" for crn in failedCrns]
-        message += "Error: Could not retrieve CRN{}: {}\n".format("s" if len(failedCrns) > 1 else "", ", ".join(failedCrns))
-    await ctx.reply(message, mention_author=False)
+        embed.add_field(
+            name="Failed to Track CRNs",
+            value=f"Error: Could not retrieve CRN{'s' if len(failedCrns) > 1 else ''}: {', '.join(failedCrns)}",
+            inline=False
+        )
+
+    # If no success
+    if not successCrns and not alreadyTrackingCrns and not failedCrns:
+        await ctx.reply("No valid courses to track.", mention_author=False)
+    else:
+        await ctx.reply(embed=embed, mention_author=False)
+
 
 @bot.command()
 async def tracking(ctx: commands.Context):
     print(f"\"{ctx.message.content}\" from user {ctx.author.name}")
     linked_requests: list[TrackRequest] = []
+    
+    # Check if the user is tracking any courses
     if ctx.author.id in user_dict:
         for crn in user_dict[ctx.author.id]:
             linked_requests.append(request_dict[crn])
+
+    # If the user is not tracking any courses, send a simple message
     if len(linked_requests) == 0:
         await ctx.reply("You are not tracking any courses", mention_author=False)
     else:
-        message = "You are tracking:\n"
+        # Build the embed response
+        embed = discord.Embed(
+            title="Courses You Are Tracking",
+            description="Here are the courses you're currently tracking:",
+            color=discord.Color.blue()
+        )
+        
+        # Add the courses as fields
         for request in linked_requests:
-            message += f"`{request.course.name}`\n"
-        await ctx.reply(message, mention_author=False)
+            embed.add_field(
+                name=request.course.name,
+                value=f"CRN: `{request.course.crn}`",
+                inline=False
+            )
+        
+        # Send the embed
+        await ctx.reply(embed=embed, mention_author=False)
 
 @bot.command()
 async def untrack(ctx: commands.Context, *crns):
