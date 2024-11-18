@@ -8,13 +8,15 @@ import threading
 from tracking import TrackRequest
 
 from token_fetcher import get_token
-from loader import load_request_list, save_request_list
+from loader import load_request_list, save_request_list, construct_request_dict, construct_user_dict
 
 from discord.ext import commands
 from discord.ext import tasks
 
 token = get_token()
 global_request_list = load_request_list()
+request_dict = construct_request_dict(global_request_list)
+user_dict = construct_user_dict(global_request_list)
 
 bot = commands.Bot(command_prefix='$', intents=discord.Intents.all())
 
@@ -64,23 +66,30 @@ async def track(ctx: commands.Context, *crns):
     alreadyTrackingCrns = []
     failedCrns = []
 
-    def attempt_track(crn):
-        for request in global_request_list:
-            if request.crn == crn:
-                if ctx.author.id in request.userIds:
-                    alreadyTrackingCrns.append(crn)
-                    return
-                else:
-                    request.userIds.append(ctx.author.id)
-                    request.channelIds.append(ctx.channel.id)
-                    successCrns.append(crn)
-                    return
+    def attempt_track(crn: str):
+        if ctx.author.id in user_dict and crn in user_dict[ctx.author.id]:
+            alreadyTrackingCrns.append(crn)
+            return
+        if crn in request_dict:
+            request_dict[crn].userIds.append(ctx.author.id)
+            request_dict[crn].channelIds.append(ctx.channel.id)
+            successCrns.append(crn)
+            if ctx.author.id in user_dict:
+                user_dict[ctx.author.id].append(crn)
+            else:
+                user_dict[ctx.author.id] = [crn]
+            return
         newRequest = TrackRequest(crn,"202502",[ctx.author.id],[ctx.channel.id])
         if newRequest.course.data['seats'] == -1:
             failedCrns.append(crn)
         else:
             global_request_list.append(newRequest)
+            request_dict[crn] = newRequest
             successCrns.append(crn)
+            if ctx.author.id in user_dict:
+                user_dict[ctx.author.id].append(crn)
+            else:
+                user_dict[ctx.author.id] = [crn]
     threads = [threading.Thread(target=attempt_track,args=(crn,)) for crn in crns]
     for t in threads:
         t.start()
@@ -104,9 +113,9 @@ async def track(ctx: commands.Context, *crns):
 async def tracking(ctx: commands.Context):
     print(f"\"{ctx.message.content}\" from user {ctx.author.name}")
     linked_requests: list[TrackRequest] = []
-    for request in global_request_list:
-        if ctx.author.id in request.userIds:
-            linked_requests.append(request)
+    if ctx.author.id in user_dict:
+        for crn in user_dict[ctx.author.id]:
+            linked_requests.append(request_dict[crn])
     if len(linked_requests) == 0:
         await ctx.reply("You are not tracking any courses", mention_author=False)
     else:
@@ -121,36 +130,35 @@ async def untrack(ctx: commands.Context, *crns):
     if len(crns) == 0:
         await ctx.reply(f"Error: Please specify at least one CRN", mention_author=False)
         return
+    if ctx.author.id not in user_dict:
+        await ctx.reply("You are not tracking any CRNs")
+        return
     crns = list(dict.fromkeys(crns)) #de-duplicate
     successCrns = []
     failedCrns = []
     if crns[0] == "all":
-        for request in global_request_list[:]:
-            if ctx.author.id in request.userIds:
-                index = request.userIds.index(ctx.author.id)
-                del request.userIds[index]
-                del request.channelIds[index]
-                successCrns.append(request.crn)
-        if len(successCrns) == 0:
-            await ctx.reply("You are not tracking any CRNs")
-            return
-    else:
-        for crn in crns:
-            foundCRN = False
-            for request in global_request_list:
-                if ctx.author.id in request.userIds and request.crn == crn:
-                    index = request.userIds.index(ctx.author.id)
-                    del request.userIds[index]
-                    del request.channelIds[index]
-                    foundCRN = True
-                    successCrns.append(crn)
-                    break
-            if not foundCRN:
-                failedCrns.append(crn)
+        crns = user_dict[ctx.author.id][:]
+    for crn in crns:
+        if crn in user_dict[ctx.author.id]:
+            index = request_dict[crn].userIds.index(ctx.author.id)
+            del request_dict[crn].userIds[index]
+            del request_dict[crn].channelIds[index]
+            user_dict[ctx.author.id].remove(crn)
+            successCrns.append(crn)
+        else:
+            failedCrns.append(crn)
     message = ""
     if len(successCrns) > 0:
-        global_request_list[:] = [request for request in global_request_list if len(request.userIds) > 0]
-        save_request_list(global_request_list)
+        removedAnything = False
+        for crn in successCrns:
+            if len(request_dict[crn].userIds) == 0:
+                global_request_list.remove(request_dict[crn])
+                del request_dict[crn]
+                removedAnything = True
+        if removedAnything:
+            save_request_list(global_request_list)
+        if len(user_dict[ctx.author.id]) == 0:
+            del user_dict[ctx.author.id]
         successCrns = [f"`{crn}`" for crn in successCrns]
         message += "You are no longer tracking CRN{}: {}\n".format("s" if len(successCrns) > 1 else "", ", ".join(successCrns))
     if len(failedCrns) > 0:

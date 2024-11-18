@@ -30,6 +30,22 @@ def load_request_list() -> list[TrackRequest]:
     except:
         return []
 
+def construct_request_dict(requests: list[TrackRequest]) -> dict[str, TrackRequest]:
+    mapping = {}
+    for request in requests:
+        mapping[request.crn] = request
+    return mapping
+
+def construct_user_dict(requests: list[TrackRequest]) -> dict[str, list[str]]:
+    mapping = {}
+    for request in requests:
+        for userId in request.userIds:
+            if userId in mapping:
+                mapping[userId].append(request.crn)
+            else:
+                mapping[userId] = [request.crn]
+    return mapping
+
 def save_request_list(trackList: list[TrackRequest]):
     json_obj = []
     for request in trackList:
