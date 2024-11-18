@@ -1,5 +1,6 @@
 # don't accidentally upload temp items to github
 bot_token.txt
+data/
 
 ## Everything below this point is default python stuff
 
