@@ -151,9 +151,10 @@ async def untrack(ctx: commands.Context, *crns):
                     break
             if not foundCRN:
                 failedCrns.append(crn)
-    save_request_list(global_request_list)
     message = ""
     if len(successCrns) > 0:
+        global_request_list[:] = [request for request in global_request_list if len(request.userIds) > 0]
+        save_request_list(global_request_list)
         successCrns = [f"`{crn}`" for crn in successCrns]
         message += "You are no longer tracking CRN{}: {}\n".format("s" if len(successCrns) > 1 else "", ", ".join(successCrns))
     if len(failedCrns) > 0:
