@@ -130,8 +130,6 @@ async def untrack(ctx: commands.Context, *crns):
                 index = request.userIds.index(ctx.author.id)
                 del request.userIds[index]
                 del request.channelIds[index]
-                # TODO: remove request from list if empty
-                # global_request_list.remove(request)
                 successCrns.append(request.crn)
         if len(successCrns) == 0:
             await ctx.reply("You are not tracking any CRNs")
@@ -144,8 +142,6 @@ async def untrack(ctx: commands.Context, *crns):
                     index = request.userIds.index(ctx.author.id)
                     del request.userIds[index]
                     del request.channelIds[index]
-                    # TODO: remove request from list if empty
-                    # global_request_list.remove(request)
                     foundCRN = True
                     successCrns.append(crn)
                     break
